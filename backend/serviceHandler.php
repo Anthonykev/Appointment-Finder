@@ -1,28 +1,35 @@
-<!-- 
-3) Web Service Handling
-Request des Clients an Server.
-Hier werden die ganzen Request die an den HTTP Status Codes Definiert.
--->
 
 <?php
+// 3) Web Service Handling
+// Request des Clients an Server.
+// Hier werden die ganzen Request die an den HTTP Status Codes Definiert.
 
 // Logik zur Fehlerbehebung, entfernen oder auskommentieren im Produktivbetrieb
-file_put_contents('debug.txt', print_r($_GET, true));
+file_put_contents('debug.txt', print_r($_REQUEST, true));
 
 // Importieren der Logik
 include("businesslogic/simpleLogic.php");
 
+$methodType = $_SERVER['REQUEST_METHOD'];
+$method = "";
+$param = [];
 
-// Überprüfung und Zuweisung von GET-Parametern
-$method = $_GET["method"] ?? "";  // Verwendung des Null Coalescing Operators für eine sauberere Syntax
-$param = $_GET["param"] ?? [];    // Annehmen, dass 'param' ein Array von Parametern sein könnte
+if ($methodType === 'GET') {
+    $method = $_GET["method"] ?? "";
+    $param = $_GET["param"] ?? [];
+} elseif ($methodType === 'POST') {
+    $input = file_get_contents("php://input");
+    $data = json_decode($input, true);
+    $method = $data["method"] ?? "";
+    $param = $data["param"] ?? [];
+}
 
 // Instanziierung der Logikklasse
 $logic = new SimpleLogic();
 $result = $logic->handleRequest($method, $param);
 
 // Antwortfunktion, die eine entsprechende HTTP-Antwort sendet
-response("GET", $result);
+response($methodType, $result);
 
 /**
  * Sendet eine HTTP-Antwort basierend auf dem Ergebnis der Logikschicht
@@ -30,6 +37,16 @@ response("GET", $result);
  * @param string $method Der HTTP-Methodentyp, der für die Anfrage verwendet wurde.
  * @param mixed $result Das Ergebnis der Logikschicht, null wenn ein Fehler aufgetreten ist.
  */
+
+//   Notizen:  hier sind die verschiedenen Klassen von HTTP-Statuscodes:
+    //  1. Informationsantworten (100–199)
+    //     - Diese Codes zeigen an, dass die Anfrage empfangen wurde und der Prozess fortgesetzt wird.
+    //  2. Erfolgreiche Antworten (200–299)     - Diese Codes zeigen an, dass die Anfrage erfolgreich empfangen, verstanden und akzeptiert wurde.
+    //  3.Umleitungen (300–399)     - Diese Codes zeigen an, dass weitere Aktionen ausgeführt werden müssen, um die Anfrage abzuschließen.
+    //  4. Client-Fehlerantworten (400–499)     - Diese Codes zeigen an, dass die Anfrage einen schlechten Syntax hat oder nicht erfüllt werden kann.
+    //  5. Server-Fehlerantworten (500–599)     - Diese Codes zeigen an, dass der Server eine scheinbar gültige Anfrage nicht erfüllen konnte.
+    //  Für eine vollständige Liste aller HTTP-Statuscodes und ihrer Bedeutungen, schauen Sie bitte auf die offizielle Dokumentation¹ oder auf Wikipedia². Bitte beachten Sie, dass einige Statuscodes von bestimmten Servern oder Anwendungen spezifisch definiert sein können und nicht in der allgemeinen HTTP-Spezifikation enthalten sind. 
+    
 function response($method, $result)
 {
     header('Content-Type: application/json');
@@ -41,29 +58,7 @@ function response($method, $result)
         echo json_encode($result);
     }
 }
+
 ?>
 
 
-
-
-
-<!-- // Notizen:
-//  hier sind die verschiedenen Klassen von HTTP-Statuscodes:
-
-// 1. Informationsantworten (100–199)
-//     - Diese Codes zeigen an, dass die Anfrage empfangen wurde und der Prozess fortgesetzt wird.
-
-// 2. Erfolgreiche Antworten (200–299)
-//     - Diese Codes zeigen an, dass die Anfrage erfolgreich empfangen, verstanden und akzeptiert wurde.
-
-// 3.Umleitungen (300–399)
-//     - Diese Codes zeigen an, dass weitere Aktionen ausgeführt werden müssen, um die Anfrage abzuschließen.
-
-// 4. Client-Fehlerantworten (400–499)
-//     - Diese Codes zeigen an, dass die Anfrage einen schlechten Syntax hat oder nicht erfüllt werden kann.
-
-// 5. Server-Fehlerantworten (500–599)
-//     - Diese Codes zeigen an, dass der Server eine scheinbar gültige Anfrage nicht erfüllen konnte.
-
-// Für eine vollständige Liste aller HTTP-Statuscodes und ihrer Bedeutungen, schauen Sie bitte auf die offizielle Dokumentation¹ oder auf Wikipedia². Bitte beachten Sie, dass einige Statuscodes von bestimmten Servern oder Anwendungen spezifisch definiert sein können und nicht in der allgemeinen HTTP-Spezifikation enthalten sind.
-//  -->

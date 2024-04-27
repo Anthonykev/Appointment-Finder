@@ -1,13 +1,12 @@
-<!-- 
-  2)  Die Business Logik 
-  
-Die Business Logik entscheidet (anhand der Parameter, Methode,…)
-wie die Applikation auf diese Anfrage reagiert
- -->
 
+<?php
+// 2)  Die Business Logik 
 
- <?php
-require_once("db/dataHandler.php");
+// Die Business Logik entscheidet (anhand der Parameter, Methode,…)
+// wie die Applikation auf diese Anfrage reagiert
+ 
+require_once __DIR__ . "/../db/dataHandler.php";
+
 
 
 

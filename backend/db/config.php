@@ -1,6 +1,5 @@
-<!-- 0)   
-     Hier stellen wir eine verbindungen zu unser Datenbank -->
 <?php
+//  0)   Hier stellen wir eine verbindungen zu unser Datenbank
 
 
 function getDatabaseConnection()
@@ -29,23 +28,23 @@ return $db_obj;
 
 }
 
+// Beispiel: 
+// class MyClass {
+//     public $prop1 = "I'm a class property!";
+// }
+
+// $obj = new MyClass;
+ 
+// Mit "new" erstell ich in php ein Object von einer bestimmten Klasse und
 ?>
 
 
 
 
 
-<!--
 
-Beispiel: 
-class MyClass {
-    public $prop1 = "I'm a class property!";
-}
 
-$obj = new MyClass;
- 
-Mit "new" erstell ich in php ein Object von einer bestimmten Klasse und
- -->
+
 
 
 

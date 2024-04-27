@@ -1,66 +1,72 @@
-<!-- 
-1) 
--->
 <?php
-require_once("config.php");
-require_once("models/appointment.php");
-require_once("models/available_dates.php");
-require_once("models/votes.php");
+// 1) 
 
-class DataHandler {
+require_once(__DIR__ . "/config.php");
+require_once(__DIR__ . "/../models/appointment.php");
+require_once(__DIR__ . "/../models/available_dates.php");
+require_once(__DIR__ . "/../models/votes.php");
+
+class DataHandler
+ {
     private $mysqli;
+
 
     public function __construct() 
     {
-        $this->mysqli = getDatabaseConnection(); // Verwendung der Funktion, um die Verbindung zu bekommen
-       
-    }
-
-    public function addAppointment($title, $location, $info, $duration, $creation_date, $voting_end_date) 
+        $this->mysqli = getDatabaseConnection();
+        if ($this->mysqli->connect_error) 
         {
-        $stmt = $this->mysqli->prepare("INSERT INTO `appointments`(`title`,`location`, `info`, `duration`, `creation_date`, `voting_end_date`) VALUES (?, ?, ?, ?, ?, ?)");
-
-        if (!$stmt) {
-            echo "Fehler beim Vorbereiten der Anweisung: (" . $this->mysqli->errno . ") " . $this->mysqli->error;
-            die(); // Skript beenden bei Fehler
+            throw new Exception("Verbindung fehlgeschlagen: " . $this->mysqli->connect_error);
         }
-
-
-        $stmt->bind_param("sssiss", $title, $location, $info, $duration, $creation_date, $voting_end_date);
-        $result = $stmt->execute();
-        $stmt->close();
-        return $result;
+    }
+    public function __destruct() 
+    {
+        $this->mysqli->close();
     }
 
-    public function getAppointment($appointment_id) {
-        $stmt = $this->mysqli->prepare("SELECT * FROM `appointments` WHERE `appointment_id` = ?");
-        $stmt->bind_param("i", $appointment_id);
-        $stmt->execute();
-        $result = $stmt->get_result();
-        if ($row = $result->fetch_assoc()) {
-            $appointment = new Appointment($row['appointment_id'], $row['title'], $row['location'], $row['info'], $row['duration'], $row['creation_date'], $row['voting_end_date']);
+
+    public function addAppointment($title, $location, $info, $duration, $creation_date, $voting_end_date) {
+        try 
+        {
+            $stmt = $this->mysqli->prepare("INSERT INTO `appointments`(`title`, `location`, `info`, `duration`, `creation_date`, `voting_end_date`) VALUES (?, ?, ?, ?, ?, ?)");
+            if (!$stmt) 
+            {
+                throw new Exception("Fehler beim Vorbereiten der Anweisung: " . $this->mysqli->error);
+            }
+            $stmt->bind_param("sssiss", $title, $location, $info, $duration, $creation_date, $voting_end_date);
+            if (!$stmt->execute()) 
+            {
+                throw new Exception("Fehler beim Ausführen der Anweisung: " . $stmt->error);
+            }
             $stmt->close();
-            return $appointment;
+            return $this->mysqli->insert_id;
+
+        } catch (Exception $e) {
+            error_log($e->getMessage());
+            throw $e; // Du kannst hier auch entscheiden, den Fehler weiterzuleiten oder einen benutzerdefinierten Fehler zurückzugeben.
         }
-        $stmt->close();
-        return null;
     }
+
 
 
     public function updateAppointment($appointment_id, $title, $location, $info, $duration, $creation_date, $voting_end_date) {
-        $stmt = $this->mysqli->prepare("UPDATE `appointments` SET `title` = ?, `location` = ?, `info` = ?, `duration` = ?, `creation_date` = ?, `voting_end_date` = ? WHERE `appointment_id` = ?");
-
-        if (!$stmt) {
-            echo "Fehler beim Vorbereiten der Anweisung: (" . $this->mysqli->errno . ") " . $this->mysqli->error;
-            die();
+        try {
+            $stmt = $this->mysqli->prepare("UPDATE `appointments` SET `title` = ?, `location` = ?, `info` = ?, `duration` = ?, `creation_date` = ?, `voting_end_date` = ? WHERE `appointment_id` = ?");
+            if (!$stmt) {
+                throw new Exception("Fehler beim Vorbereiten der Anweisung: " . $this->mysqli->error);
+            }
+            $stmt->bind_param("sssissi", $title, $location, $info, $duration, $creation_date, $voting_end_date, $appointment_id);
+            if (!$stmt->execute()) {
+                throw new Exception("Fehler beim Ausführen der Anweisung: " . $stmt->error);
+            }
+            $stmt->close();
+            return true; // Rückgabe von true für erfolgreiche Aktualisierung
+        } catch (Exception $e) {
+            error_log($e->getMessage());
+            throw $e;
         }
-
-        $stmt->bind_param("sssissi", $title, $location, $info, $duration, $creation_date, $voting_end_date, $appointment_id);
-        $result = $stmt->execute();
-        $stmt->close();
-        return $result;
     }
-
+    
     public function deleteAppointment($appointment_id) {
         $stmt = $this->mysqli->prepare("DELETE FROM `appointments` WHERE `appointment_id` = ?");
         $stmt->bind_param("i", $appointment_id);
