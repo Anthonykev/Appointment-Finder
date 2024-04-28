@@ -4,7 +4,7 @@
 
 // Die Business Logik entscheidet (anhand der Parameter, Methode,…)
 // wie die Applikation auf diese Anfrage reagiert
- 
+ //brauchen wir für die Logik später - wird weitergegeben an Servicehandler
 require_once __DIR__ . "/../db/dataHandler.php";
 
 
@@ -25,11 +25,22 @@ class SimpleLogic
         switch ($method) 
         {
             case "addAppointment":
-                $res = $this->dh->addAppointment($param['title'], $param['location'], $param['info'], $param['duration'], $param['creation_date'], $param['voting_end_date']);
+                // Überprüfen, ob der 'date' Parameter vorhanden und ein Array ist
+                if (isset($param['date']) && is_array($param['date'])) {
+                    $dateOptions = $param['date']; // Hier sind alle Terminoptionen als Array
+                } else {
+                    $dateOptions = []; // Leeres Array, falls keine Terminoptionen übergeben wurden
+                }
+                $res = $this->dh->addAppointment($param['title'], $param['location'], $param['info'], $param['duration'], $param['creation_date'], $param['voting_end_date'], $dateOptions);
                 break;
-            case "getAppointment":
-                $res = $this->dh->getAppointment($param);
+                
+            case "getAllAppointments":
+                $res = $this->dh->getAllAppointments();
                 break;
+            case "getAppointmentDetails":
+                $res = $this->dh->getAppoinmentDetails($param['appointment_id']);
+                break;
+                
             case "updateAppointment":
                 $res = $this->dh->updateAppointment($param['appointment_id'], $param['title'], $param['location'], $param['info'], $param['duration'], $param['creation_date'], $param['voting_end_date']);
                 break;
