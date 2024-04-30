@@ -1,4 +1,3 @@
-
 <?php
 // 2)  Die Business Logik 
 
@@ -21,18 +20,16 @@ class SimpleLogic
 
     function handleRequest($method, $param) 
     {
+        error_log("Received params: " . print_r($param, true));
         $res = null; // Standardwert für die Antwort
         switch ($method) 
         {
             case "addAppointment":
-                // Überprüfen, ob der 'date' Parameter vorhanden und ein Array ist
-                if (isset($param['date']) && is_array($param['date'])) {
-                    $dateOptions = $param['date']; // Hier sind alle Terminoptionen als Array
-                } else {
-                    $dateOptions = []; // Leeres Array, falls keine Terminoptionen übergeben wurden
-                }
-                $res = $this->dh->addAppointment($param['title'], $param['location'], $param['info'], $param['duration'], $param['creation_date'], $param['voting_end_date'], $dateOptions);
-                break;
+                
+                $dateOptions = isset($param['dateOptions']) ? $param['dateOptions'] : [];
+            error_log("Date options: " . print_r($dateOptions, true));
+            $res = $this->dh->addAppointment($param['title'], $param['location'], $param['info'], $param['duration'], $param['creation_date'], $param['voting_end_date'], $dateOptions);
+            break;
                 
             case "getAllAppointments":
                 $res = $this->dh->getAllAppointments();

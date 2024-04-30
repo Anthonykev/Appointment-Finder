@@ -11,6 +11,7 @@ Class Available_dates{
 
 
     function __construct($date_id, $appointment_id, $proposed_date, $vote_start_date, $vote_end_date)
+     
     {
     $this->date_id  = $date_id;
     $this->appointment_id  = $appointment_id;
@@ -19,13 +20,8 @@ Class Available_dates{
     $this->vote_end_date = $vote_end_date;
     }
 
-    
-
-
-
 
 }
-
 
 
 

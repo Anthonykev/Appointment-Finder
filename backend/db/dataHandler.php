@@ -24,58 +24,44 @@ class DataHandler
         $this->mysqli->close();
     }
 
-/*
-    public function addAppointment($title, $location, $info, $duration, $creation_date, $voting_end_date) {
-        try 
-        {
-            $stmt = $this->mysqli->prepare("INSERT INTO `appointments`(`title`, `location`, `info`, `duration`, `creation_date`, `voting_end_date`) VALUES (?, ?, ?, ?, ?, ?)");
-            if (!$stmt) 
-            {
-                throw new Exception("Fehler beim Vorbereiten der Anweisung: " . $this->mysqli->error);
-            }
+
+    public function addAppointment($title, $location, $info, $duration, $creation_date, $voting_end_date, $dateOptions) {
+        $this->mysqli->autocommit(FALSE);
+        try {
+            $stmt = $this->mysqli->prepare("INSERT INTO `appointments` (`title`, `location`, `info`, `duration`, `creation_date`, `voting_end_date`) VALUES (?, ?, ?, ?, ?, ?)");
+            if (!$stmt) throw new Exception("Prepare failed: " . $this->mysqli->error);
             $stmt->bind_param("sssiss", $title, $location, $info, $duration, $creation_date, $voting_end_date);
-            if (!$stmt->execute()) 
-            {
-                throw new Exception("Fehler beim Ausführen der Anweisung: " . $stmt->error);
+            if (!$stmt->execute()) throw new Exception("Execute failed: " . $stmt->error);
+            $appointmentId = $this->mysqli->insert_id;
+            $stmt->close();
+    
+            $stmt = $this->mysqli->prepare("INSERT INTO `available_dates` (`appointment_id`, `proposed_date`, `vote_start_date`, `vote_end_date`) VALUES (?, ?, ?, ?)");
+            if (!$stmt) throw new Exception("Prepare failed: " . $this->mysqli->error);
+    
+            foreach ($dateOptions as $dateOption) {
+                if (!isset($dateOption['proposed_date'], $dateOption['vote_start_date'], $dateOption['vote_end_date'])) {
+                    throw new Exception("Date options are not set properly");
+                }
+                $stmt->bind_param("isss", $appointmentId, $dateOption['proposed_date'], $dateOption['vote_start_date'], $dateOption['vote_end_date']);
+                if (!$stmt->execute()) {
+                    error_log("Execute failed: " . $stmt->error);
+                    throw new Exception("Execute failed: " . $stmt->error);
+                }
             }
             $stmt->close();
-            return $this->mysqli->insert_id;
-
+            $this->mysqli->commit();
+            $this->mysqli->autocommit(TRUE);
+            return $appointmentId;
+    
         } catch (Exception $e) {
+            $this->mysqli->rollback();
+            $this->mysqli->autocommit(TRUE);
             error_log($e->getMessage());
-            throw $e; // Du kannst hier auch entscheiden, den Fehler weiterzuleiten oder einen benutzerdefinierten Fehler zurückzugeben.
+            throw $e;
         }
     }
-*/
-public function addAppointment($title, $location, $info, $duration, $creation_date, $voting_end_date, $dateOptions) {
-    try {
-        $this->mysqli->begin_transaction(); // Starten einer Transaktion
+    
 
-        // Schritt 1: Speichern Sie die Grunddaten des Termins
-        $stmt = $this->mysqli->prepare("INSERT INTO `appointments`(`title`, `location`, `info`, `duration`, `creation_date`, `voting_end_date`) VALUES (?, ?, ?, ?, ?, ?)");
-        $stmt->bind_param("sssiss", $title, $location, $info, $duration, $creation_date, $voting_end_date);
-        $stmt->execute();
-        $appointmentId = $this->mysqli->insert_id;
-        $stmt->close();
-
-        // Schritt 2: Durchlaufen der Terminoptionen und Speichern in der Tabelle `available_dates`
-        $stmt = $this->mysqli->prepare("INSERT INTO `available_dates` (`appointment_id`, `proposed_date`, `vote_start_date`, `vote_end_date`) VALUES (?, ?, ?, ?)");
-        foreach ($dateOptions as $dateOption) {
-            $stmt->bind_param("isss", $appointmentId, $dateOption['proposed_date'], $dateOption['vote_start_date'], $dateOption['vote_end_date']);
-            $stmt->execute();
-        }
-        $stmt->close();
-
-        $this->mysqli->commit(); // Transaktion abschließen
-
-        return $appointmentId;
-
-    } catch (Exception $e) {
-        $this->mysqli->rollback(); // Im Fehlerfall die Transaktion zurückrollen
-        error_log($e->getMessage());
-        throw $e; // Weiterleiten des Fehlers
-    }
-}
 
 
     public function updateAppointment($appointment_id, $title, $location, $info, $duration, $creation_date, $voting_end_date) {
@@ -105,12 +91,34 @@ public function addAppointment($title, $location, $info, $duration, $creation_da
         return $result;
     }
 
-    public function addAvailableDate($appointment_id, $proposed_date) {
-        $stmt = $this->mysqli->prepare("INSERT INTO `available_dates`(`appointment_id`, `proposed_date`) VALUES (?, ?)");
-        $stmt->bind_param("is", $appointment_id, $proposed_date);
-        $result = $stmt->execute();
+    // public function addAvailableDate($appointment_id, $proposed_date) {
+    //     $stmt = $this->mysqli->prepare("INSERT INTO `available_dates`(`appointment_id`, `proposed_date`) VALUES (?, ?)");
+    //     $stmt->bind_param("is", $appointment_id, $proposed_date);
+    //     $result = $stmt->execute();
+    //     $stmt->close();
+    //     return $result;
+    // }
+    public function addAvailableDates($appointmentId, $dateOptions) {
+        $values = [];
+        $placeHolders = [];
+        foreach ($dateOptions as $dateOption) {
+            $values[] = $appointmentId;
+            $values[] = $dateOption['proposed_date'];
+            $values[] = $dateOption['vote_start_date'];
+            $values[] = $dateOption['vote_end_date'];
+            $placeHolders[] = "(?, ?, ?, ?)";
+        }
+    
+        $stmt = $this->mysqli->prepare("INSERT INTO `available_dates` (`appointment_id`, `proposed_date`, `vote_start_date`, `vote_end_date`) VALUES " . implode(', ', $placeHolders));
+        if (!$stmt) {
+            throw new Exception("Prepare failed: " . $this->mysqli->error);
+        }
+    
+        $stmt->bind_param(str_repeat("isss", count($dateOptions)), ...$values);
+        if (!$stmt->execute()) {
+            throw new Exception("Execute failed: " . $stmt->error);
+        }
         $stmt->close();
-        return $result;
     }
 
     public function addVote($date_id, $user_name, $comment) {

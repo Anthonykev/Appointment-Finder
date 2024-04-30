@@ -1,5 +1,5 @@
 $(document).ready(function() {
-    console.log("hhhhhhh");
+    console.log("Jquery Funktioniert");
     initializeFormAndHandleSubmission();
     loadAppointments();
     // Überprüfen Sie, ob Sie sich auf der Detailseite befinden und laden Sie die Details
@@ -88,19 +88,24 @@ function showAppointmentForm() {
     });
 }
 
-function submitAppointment() {
+function submitAppointment() 
+{
     // Sammeln der Daten für die Terminoptionen
     const dateOptions = [];
     $('#dateOptionsContainer .dateOption').each(function(index, element) {
-        if (index % 3 === 0) { // Jedes dritte Element ist ein neues Datum
+        // Stelle sicher, dass du alle drei Teile eines Datums gleichzeitig abrufst
+        if (index % 3 === 0) 
+        { // Jedes dritte Element ist ein neues Datum
             const proposedDate = $(element).val();
-            const startDate = $(element).next().val(); // Nächstes Element ist das Startdatum
-            const endDate = $(element).next().next().val(); // Übernächstes Element ist das Enddatum
+            const startDate = $(element).closest('.mb-3').next().find('.dateOption').val();
+            const endDate = $(element).closest('.mb-3').next().next().find('.dateOption').val();
             dateOptions.push({
                 proposed_date: proposedDate,
                 vote_start_date: startDate,
                 vote_end_date: endDate
             });
+            console.log(dateOptions);
+
         }
     });
 
@@ -115,6 +120,8 @@ function submitAppointment() {
         dateOptions: dateOptions // Korrekte Schreibweise
     };
 
+    console.log(appointmentData);  // Gibt die gesammelten Daten im Browser-Console-Log aus.
+    
     // AJAX-Request an das Backend
     $.ajax({
         url: '/Appointment-Finder/backend/serviceHandler.php',
@@ -144,16 +151,15 @@ function loadAppointments() {
         data: { method: "getAllAppointments" },
         dataType: 'json', // Sagen Sie jQuery, dass es eine JSON-Antwort erwartet
         success: function(appointments) {
-            console.log("Geladene Termine:", appointments);
             displayAppointments(appointments); // Direkt das JavaScript-Objekt verwenden
         },
         error: function(xhr, status, error) {
-            console.error("Fehler beim Laden der Termine:", xhr.responseText);
+            console.error("Fehler beim Anzeigen der Termine:", xhr.responseText);
         }
     });
 }
-//überarrbeitete Version
 function displayAppointments(appointments) {
+    console.log("Gespeicherte Termine: ", appointments); // Zeigt die geladenen Termindaten in der Konsole an
     try {
         const tableBody = $('#appointmentsTable tbody');
         tableBody.empty();
@@ -165,44 +171,13 @@ function displayAppointments(appointments) {
                 <td><button onclick="location.href='details.html?appointment_id=${appointment.appointment_id}'">Details ansehen</button></td>
             </tr>`;
             tableBody.append(row);
-    });
+        });
     } catch (e) {
-        // Hier können Sie eine Fehlermeldung ausgeben oder etwas anderes tun
         console.error("Es gab einen Fehler beim Parsen der Termine: ", e);
     }
 }
 
 
-function showDetails(appointment_id) {
-    $.ajax({
-        url: '/Appointment-Finder/backend/serviceHandler.php',
-        method: 'GET',
-        data: { method: "getAppointmentDetails", param: { appointment_id } },
-        success: function(response) {
-            console.log(response);
-            // Hier können weitere Informationen angezeigt werden
-        },
-        error: function() {
-            console.error("Fehler beim Laden der Termin Details.");
-        }
-    });
-}
-
-function loadAppointmentDetails(appointmentId) {
-    $.ajax({
-        url: '/Appointment-Finder/backend/serviceHandler.php',
-        method: 'GET',
-        data: { method: "getAppointmentDetails", param: { appointment_id: appointmentId } },
-        dataType: 'json',
-        success: function(details) {
-            // Verwenden Sie hier die erhaltenen Daten, um das HTML auf der Seite zu füllen.
-            displayAppointmentDetails(details);
-        },
-        error: function(xhr, status, error) {
-            console.error("Fehler beim Laden der Termin Details:", xhr.responseText);
-        }
-    });
-}
 
 function displayAppointmentDetails(details) {
     // Hier fügen Sie die Details des Termins in das DOM ein
@@ -324,6 +299,4 @@ function submitVote(voteData) {
         }
     });
 }
-
-
 
