@@ -144,62 +144,111 @@ class DataHandler
         return $appointments;
     }
 
-    public function getAppoinmentDetails($appointment_id){
-        $details =[];
-        //Spalte von Appointsments id gesucht ? als Platzhalter
-        $stmt = $this->mysqli->prepare("SELECT * FROM appointments WHERE appointments_id = ?");
-        //jetzt binden wir Platzhalter ? mit i = für Integer Ganzzahlen Sicherstellung
-        $stmt ->bind_param("i", $appointment_id);
-        //alles was Vorbereitet wurde wird ausgeführt 
-        $stmt -> execute();
-        //nachdem wird das Ergebnis mit get result Abgerufen und mit fetch Aufgerufen - für Ergbnis anzeigung
+    public function getAppointmentDetails($appointment_id) {
+        $details = [];
+    
+        // Abfrage der Termindetails
+        $stmt = $this->mysqli->prepare("SELECT * FROM appointments WHERE appointment_id = ?");
+        $stmt->bind_param("i", $appointment_id);
+        $stmt->execute();
         $details['appointment'] = $stmt->get_result()->fetch_assoc();
         $stmt->close();
-
-        // Holen Sie die verfügbaren Terminoptionen
+    
+        // Abfrage der verfügbaren Termindaten
         $stmt = $this->mysqli->prepare("SELECT * FROM available_dates WHERE appointment_id = ?");
         $stmt->bind_param("i", $appointment_id);
         $stmt->execute();
         $availableDatesResult = $stmt->get_result();
         $details['availableDates'] = $availableDatesResult->fetch_all(MYSQLI_ASSOC);
         $stmt->close();
-
-        // Holen Sie die bereits abgegebenen Stimmen
-        $stmt = $this->mysqli->prepare("SELECT * FROM votes WHERE appointment_id = ?");
-        $stmt->bind_param("i", $appointment_id);
-        $stmt->execute();
-        $votesResult = $stmt->get_result();
-        $details['votes'] = $votesResult->fetch_all(MYSQLI_ASSOC);
-        $stmt->close();
-
+    
+        // Abfrage der Stimmen, die zu den verfügbaren Terminen gehören
+        $details['votes'] = []; // Initialisieren des Arrays
+        foreach ($details['availableDates'] as $date) {
+            $stmt = $this->mysqli->prepare("SELECT * FROM votes WHERE date_id = ?");
+            $stmt->bind_param("i", $date['date_id']);
+            $stmt->execute();
+            $votesResult = $stmt->get_result();
+            while ($vote = $votesResult->fetch_assoc()) {
+                $details['votes'][$date['date_id']][] = $vote;
+            }
+            $stmt->close();
+        }
+    
         return $details;
     }
 
-    public function submitVote($appointmentId, $userName, $selectedDateIds, $comment) {
-        // Beginnen Sie eine Transaktion
+    public function submitVote($userName, $selectedDateIds, $comment) {
+        $this->mysqli->begin_transaction();
+        try {
+            foreach ($selectedDateIds as $dateId) {
+                $stmt = $this->mysqli->prepare("INSERT INTO votes (date_id, user_name, comment) VALUES (?, ?, ?)");
+                $stmt->bind_param("iss", $dateId, $userName, $comment);
+                $stmt->execute();
+                $stmt->close();
+            }
+            $this->mysqli->commit();
+            return ['success' => true, 'message' => 'Die Abstimmung wurde erfolgreich gespeichert.'];
+        } catch (Exception $e) {
+            $this->mysqli->rollback();
+            error_log($e->getMessage());
+            return ['success' => false, 'message' => 'Ein Fehler ist bei der Abstimmung aufgetreten.'];
+        }
+    }
+    
+    
+
+
+    
+
+  /*
+    public function getAppointmentDetails($appointment_id) {
+        $details = [];
+    
+        // Abfrage der Termindetails
+        $stmt = $this->mysqli->prepare("SELECT * FROM appointments WHERE appointment_id = ?");
+        $stmt->bind_param("i", $appointment_id);
+        $stmt->execute();
+        $details['appointment'] = $stmt->get_result()->fetch_assoc();
+        $stmt->close();
+    
+        // Abfrage der verfügbaren Termindaten
+        $stmt = $this->mysqli->prepare("SELECT * FROM available_dates WHERE appointment_id = ?");
+        $stmt->bind_param("i", $appointment_id);
+        $stmt->execute();
+        $availableDatesResult = $stmt->get_result();
+        $details['availableDates'] = $availableDatesResult->fetch_all(MYSQLI_ASSOC);
+        $stmt->close();
+    
+        // Abfrage der Stimmen, die zu den verfügbaren Terminen gehören
+        foreach ($details['availableDates'] as $date) {
+            $stmt = $this->mysqli->prepare("SELECT * FROM votes WHERE date_id = ?");
+            $stmt->bind_param("i", $date['date_id']);
+            $stmt->execute();
+            $votesResult = $stmt->get_result();
+            while ($vote = $votesResult->fetch_assoc()) {
+                $details['votes'][$date['date_id']][] = $vote;
+            }
+            $stmt->close();
+        }
+    
+        return $details;
+    }
+
+    public function submitVote($userName, $selectedDateIds, $comment) {
         $this->mysqli->begin_transaction();
     
         try {
-            // Einfügen des Benutzernamens und Kommentars in die Tabelle `votes`
-            $stmt = $this->mysqli->prepare("INSERT INTO votes (appointment_id, user_name, comment) VALUES (?, ?, ?)");
-            $stmt->bind_param("iss", $appointmentId, $userName, $comment);
-            $stmt->execute();
-            $voteId = $this->mysqli->insert_id;
-            $stmt->close();
-    
-            // Für jede date_id das zugehörige proposed_date finden und in die Tabelle `votes` einfügen
+            // Einfügen von Stimmen für jede ausgewählte date_id
             foreach ($selectedDateIds as $dateId) {
-                $proposedDate = $this->getProposedDateById($dateId);
-                if ($proposedDate) {
-                    // Ihr Logik zum Verarbeiten des Datums...
-                } else {
-                    // Datum nicht gefunden, werfen Sie einen Fehler oder behandeln Sie den Fall angemessen
-                }
+                $stmt = $this->mysqli->prepare("INSERT INTO votes (date_id, user_name, comment) VALUES (?, ?, ?)");
+                $stmt->bind_param("iss", $dateId, $userName, $comment);
+                $stmt->execute();
+                $stmt->close();
             }
     
             // Commit der Transaktion
             $this->mysqli->commit();
-    
             return ['success' => true, 'message' => 'Die Abstimmung wurde erfolgreich gespeichert.'];
         } catch (Exception $e) {
             // Rollback der Transaktion
@@ -208,6 +257,7 @@ class DataHandler
             return ['success' => false, 'message' => 'Ein Fehler ist bei der Abstimmung aufgetreten.'];
         }
     }
+    */
     
     public function getProposedDateById($dateId) {
         $stmt = $this->mysqli->prepare("SELECT proposed_date FROM available_dates WHERE date_id = ?");

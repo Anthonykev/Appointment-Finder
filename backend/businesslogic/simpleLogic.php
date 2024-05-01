@@ -35,7 +35,7 @@ class SimpleLogic
                 $res = $this->dh->getAllAppointments();
                 break;
             case "getAppointmentDetails":
-                $res = $this->dh->getAppoinmentDetails($param['appointment_id']);
+                $res = $this->dh->getAppointmentDetails($param['appointment_id']);
                 break;
                 
             case "updateAppointment":
@@ -44,9 +44,23 @@ class SimpleLogic
             case "deleteAppointment":
                 $res = $this->dh->deleteAppointment($param);
                 break;
+            case "submitVote":
+                // Stelle sicher, dass alle nötigen Parameter vorhanden sind
+                if (isset($param['selectedDateIds'], $param['userName'], $param['comment'])) {
+                    $res = $this->dh->submitVote(
+                        $param['userName'],
+                        $param['selectedDateIds'],
+                        $param['comment']
+                    );
+                } else {
+                    $res = ['success' => false, 'message' => 'Fehlende Parameter für die Stimmabgabe'];
+                }
+                break;
+                /*
             case "addAvailableDate":
                 $res = $this->dh->addAvailableDate($param['appointment_id'], $param['proposed_date']);
                 break;
+                */
             case "addVote":
                 $res = $this->dh->addVote($param['date_id'], $param['user_name'], $param['comment']);
                 break;

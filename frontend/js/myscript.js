@@ -3,13 +3,12 @@ $(document).ready(function() {
     initializeFormAndHandleSubmission();
     loadAppointments();
     // Überprüfen Sie, ob Sie sich auf der Detailseite befinden und laden Sie die Details
-    if (window.location.pathname.includes('details.html')) {
-        const urlParams = new URLSearchParams(window.location.search);
-        const appointmentId = urlParams.get('appointment_id');
-        if (appointmentId) {
-            loadAppointmentDetails(appointmentId);
-        }
+    const urlParams = new URLSearchParams(window.location.search);
+    const appointmentId = urlParams.get('appointment_id');
+    if (appointmentId) {
+        loadAppointmentDetails(appointmentId);
     }
+    
 });
 
 function initializeFormAndHandleSubmission() {
@@ -158,6 +157,9 @@ function loadAppointments() {
         }
     });
 }
+
+
+/*
 function displayAppointments(appointments) {
     console.log("Gespeicherte Termine: ", appointments); // Zeigt die geladenen Termindaten in der Konsole an
     try {
@@ -175,10 +177,218 @@ function displayAppointments(appointments) {
     } catch (e) {
         console.error("Es gab einen Fehler beim Parsen der Termine: ", e);
     }
+}*/
+function displayAppointments(appointments) {
+    console.log("Gespeicherte Termine: ", appointments);
+    const tableBody = $('#appointmentsTable tbody');
+    tableBody.empty();
+    appointments.forEach(appointment => {
+        const now = new Date();
+        const votingEndDate = new Date(appointment.voting_end_date);
+        const isExpired = votingEndDate < now;
+        const statusClass = isExpired ? 'expired' : 'active';
+        const row = `<tr class="${statusClass}">
+            <td>${appointment.title}</td>
+            <td>${appointment.location}</td>
+            <td>
+                <button onclick="location.href='details.html?appointment_id=${appointment.appointment_id}'" ${isExpired ? 'disabled' : ''}>Details ansehen</button>
+            </td>
+        </tr>`;
+        tableBody.append(row);
+    });
+}
+
+// Lädt die Details für einen spezifischen Termin
+function loadAppointmentDetails(appointmentId) {
+    console.log("Lade Details für Termin ID:", appointmentId);
+    $.ajax({
+        url: '/Appointment-Finder/backend/serviceHandler.php',
+        method: 'GET',
+        data: {
+            method: "getAppointmentDetails",
+            param: { appointment_id: appointmentId }
+        },
+        dataType: 'json',
+        success: function(details) {
+            console.log("Termin Details geladen:", details);
+            displayAppointmentDetails(details);
+        },
+        error: function(xhr, status, error) {
+            console.error("Fehler beim Laden der Termin Details:", xhr.responseText);
+            alert('Fehler beim Laden der Details: ' + error);
+        }
+    });
+}
+/*
+function displayAppointmentDetails(details) {
+    const detailsContainer = $('#appointmentDetails');
+    detailsContainer.empty();
+
+    const detailsHtml = `
+        <h2>Details für ${details.appointment.title}</h2>
+        <table class="table">
+            <tr><th>Titel</th><td>${details.appointment.title}</td></tr>
+            <tr><th>Ort</th><td>${details.appointment.location}</td></tr>
+            <tr><th>Information</th><td>${details.appointment.info}</td></tr>
+            <tr><th>Dauer</th><td>${details.appointment.duration} Minuten</td></tr>
+            <tr><th>Erstellungsdatum</th><td>${new Date(details.appointment.creation_date).toLocaleString()}</td></tr>
+            <tr><th>Enddatum der Abstimmung</th><td>${new Date(details.appointment.voting_end_date).toLocaleString()}</td></tr>
+        </table>
+    `;
+
+    // Terminoptionen
+    const datesHtml = details.availableDates.map(date => `
+        <div class="form-check">
+            <input class="form-check-input" type="checkbox" name="dateOptions" value="${date.date_id}" id="dateOption${date.date_id}">
+            <label class="form-check-label" for="dateOption${date.date_id}">
+                ${new Date(date.proposed_date).toLocaleString()}
+            </label>
+        </div>
+    `).join('');
+
+    // Abstimmungsformular
+    const formHtml = `
+        <form id="votingForm">
+            <h3>Wählen Sie einen Termin:</h3>
+            ${datesHtml}
+            <div>
+                <label for="userName">Ihr Name:</label>
+                <input type="text" id="userName" required>
+            </div>
+            <div>
+                <label for="comment">Kommentar:</label>
+                <textarea id="comment"></textarea>
+            </div>
+            <button type="submit" class="btn btn-primary">Abstimmen</button>
+        </form>
+    `;
+
+    detailsContainer.append(detailsHtml + formHtml);
+
+    // Event-Handler für das Submit-Event des Abstimmungsformulars
+    $('#votingForm').on('submit', function(e) {
+        e.preventDefault();
+        var selectedDates = [];
+        $('input[name="dateOptions"]:checked').each(function() {
+            selectedDates.push($(this).val());
+        });
+    
+        var voteData = {
+            userName: $('#userName').val(),  // Stellen Sie sicher, dass ein Eingabefeld mit id="userName" existiert
+            comment: $('#comment').val(),   // Stellen Sie sicher, dass ein Textbereich mit id="comment" existiert
+            selectedDates: selectedDates
+        };
+    
+        console.log(voteData);  // Überprüfen Sie die Ausgabe im Konsolen-Log
+    
+        submitVote(voteData);
+    });
+}*/
+function displayAppointmentDetails(details) {
+    const detailsContainer = $('#appointmentDetails');
+    detailsContainer.empty();
+    const now = new Date();
+    const votingEndDate = new Date(details.voting_end_date);
+    const isExpired = votingEndDate < now;
+
+    if (!details || !details.appointment) {
+        detailsContainer.append('<p>Keine Details verfügbar.</p>');
+        return;
+    }
+
+    const { title, location, info, duration, creation_date, voting_end_date } = details.appointment;
+
+    const detailsHtml = `
+        <h2>Details für ${title}</h2>
+        <table class="table">
+            <tr><th>Titel</th><td>${title}</td></tr>
+            <tr><th>Ort</th><td>${location}</td></tr>
+            <tr><th>Information</th><td>${info}</td></tr>
+            <tr><th>Dauer</th><td>${duration} Minuten</td></tr>
+            <tr><th>Erstellungsdatum</th><td>${new Date(creation_date).toLocaleString()}</td></tr>
+            <tr><th>Enddatum der Abstimmung</th><td>${new Date(voting_end_date).toLocaleString()}</td></tr>
+        </table>
+    `;
+    detailsContainer.append(detailsHtml);
+
+    if (!isExpired) {
+        const datesHtml = details.availableDates.map(date => `
+            <div class="form-check">
+                <input class="form-check-input" type="checkbox" name="dateOptions" value="${date.date_id}" id="dateOption${date.date_id}">
+                <label class="form-check-label" for="dateOption${date.date_id}">
+                    ${new Date(date.proposed_date).toLocaleString()}
+                </label>
+            </div>
+        `).join('');
+
+        const votingFormHtml = `
+            <form id="votingForm">
+                <h3>Wählen Sie einen Termin:</h3>
+                ${datesHtml}
+                <input type="text" id="userName" placeholder="Ihr Name" required>
+                <textarea id="comment" placeholder="Kommentar (optional)"></textarea>
+                <button type="submit" class="btn btn-primary">Abstimmen</button>
+            </form>
+        `;
+        detailsContainer.append(votingFormHtml);
+    } else {
+        detailsContainer.append('<p>Dieser Termin ist abgelaufen und kann nicht mehr gewählt werden.</p>');
+    }
+    // Event-Handler für das Submit-Event des Abstimmungsformulars
+    $('#votingForm').on('submit', function(e) {
+        e.preventDefault();
+        var selectedDates = [];
+        $('input[name="dateOptions"]:checked').each(function() {
+            selectedDates.push($(this).val());
+        });
+    
+        var voteData = {
+            userName: $('#userName').val(),  // Stellen Sie sicher, dass ein Eingabefeld mit id="userName" existiert
+            comment: $('#comment').val(),   // Stellen Sie sicher, dass ein Textbereich mit id="comment" existiert
+            selectedDates: selectedDates
+        };
+    
+        console.log(voteData);  // Überprüfen Sie die Ausgabe im Konsolen-Log
+    
+        submitVote(voteData);
+    });
 }
 
 
 
+
+function submitVote(voteData) {
+    $.ajax({
+        url: '/Appointment-Finder/backend/serviceHandler.php',
+        method: 'POST',
+        contentType: 'application/json',
+        data: JSON.stringify({
+            method: "submitVote",
+            param: {
+                selectedDateIds: voteData.selectedDates,
+                userName: voteData.userName,
+                comment: voteData.comment
+            }
+        }),
+        success: function(response) {
+            console.log('Abstimmung erfolgreich:', response);
+            alert('Ihre Stimme wurde erfolgreich abgegeben. Sie werden in Kürze weitergeleitet.');
+
+            // Setzen Sie hier die gewünschte Verzögerungszeit in Millisekunden (z.B. 3000 Millisekunden = 3 Sekunden)
+            setTimeout(function() {
+                window.location.href = 'index.html';  // Gehe zur Startseite
+            }, 2000);  // 3000 Millisekunden Verzögerung
+        },
+        error: function(xhr, status, error) {
+            console.error("Fehler beim Senden der Abstimmung:", xhr.responseText);
+            alert('Es gab ein Problem bei der Abstimmung: ' + error);
+        }
+    });
+}
+
+
+
+/*
 function displayAppointmentDetails(details) {
     // Hier fügen Sie die Details des Termins in das DOM ein
     const detailsContainer = $('#appointmentDetails');
@@ -262,9 +472,7 @@ function displayAppointmentDetails(details) {
     });
 
     // Funktion, um die Abstimmung zu verarbeiten (diese müssen Sie schreiben)
-    function submitVote(voteData) {
-        // Logik zum Erfassen der Abstimmungsdaten und Senden an das Backend
-    }
+   
 
     // Hier sollten Sie die Terminoptionen aus `details` durchlaufen und für jede eine Checkbox hinzufügen
     // Beispiel (Sie müssen dies entsprechend Ihrer Datenstruktur anpassen):
@@ -279,6 +487,7 @@ function displayAppointmentDetails(details) {
         `);
     });
 }
+
 function submitVote(voteData) {
     $.ajax({
         url: '/Appointment-Finder/backend/serviceHandler.php',
@@ -298,5 +507,6 @@ function submitVote(voteData) {
             alert('Es gab ein Problem bei der Abstimmung: ' + error);
         }
     });
+    
 }
-
+*/
