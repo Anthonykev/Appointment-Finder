@@ -42,7 +42,8 @@ class SimpleLogic
                 $res = $this->dh->updateAppointment($param['appointment_id'], $param['title'], $param['location'], $param['info'], $param['duration'], $param['creation_date'], $param['voting_end_date']);
                 break;
             case "deleteAppointment":
-                $res = $this->dh->deleteAppointment($param);
+                $res = $this->dh->deleteAppointment($param['appointment_id']);
+                
                 break;
             case "submitVote":
                 // Stelle sicher, dass alle nötigen Parameter vorhanden sind

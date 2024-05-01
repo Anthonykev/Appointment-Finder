@@ -354,9 +354,6 @@ function displayAppointmentDetails(details) {
     });
 }
 
-
-
-
 function submitVote(voteData) {
     $.ajax({
         url: '/Appointment-Finder/backend/serviceHandler.php',
@@ -386,6 +383,83 @@ function submitVote(voteData) {
     });
 }
 
+// Diese Funktion lädt alle Termine und zeigt sie in einer Tabelle mit Lösch-Buttons an.
+function loadAppointmentsToDelete() {
+    $.ajax({
+        url: '/Appointment-Finder/backend/serviceHandler.php',
+        method: 'GET',
+        data: {
+            method: "getAllAppointments"
+        },
+        dataType: 'json',
+        success: function(appointments) {
+            const tableBody = $('#appointmentDelete tbody');
+            tableBody.empty();
+            appointments.forEach(function(appointment) {
+                tableBody.append(`
+                    <tr>
+                        <td>${appointment.title}</td>
+                        <td>${appointment.location}</td>
+                        <td><button onclick="deleteAppointment(${appointment.appointment_id})" class="btn btn-danger">Löschen</button></td>
+                    </tr>
+                `);
+            });
+        },
+        error: function(xhr, status, error) {
+            console.error("Fehler beim Laden der Termine:", xhr.responseText);
+            alert('Fehler beim Laden der Termine: ' + error);
+        }
+    });
+}
+
+function deleteAppointment(appointmentId) {
+    if (confirm('Sind Sie sicher, dass Sie diesen Termin löschen möchten?')) {
+        $.ajax({
+            url: '/Appointment-Finder/backend/serviceHandler.php',
+            method: 'POST',
+            contentType: 'application/json', // Stelle sicher, dass der Content-Type auf application/json gesetzt ist
+            data: JSON.stringify({
+                method: "deleteAppointment",
+                param: { appointment_id: appointmentId }
+            }),
+            success: function(response) {
+                alert('Termin erfolgreich gelöscht.');
+                loadAppointmentsToDelete(); // Liste neu laden
+            },
+            error: function(xhr, status, error) {
+                console.error("Fehler beim Löschen des Termins:", xhr.responseText);
+                alert('Fehler beim Löschen des Termins: ' + error);
+            }
+        });
+    }
+}
+
+
+/*
+// Funktion zum Löschen eines Termins
+function deleteAppointment(appointmentId) {
+    if (confirm('Sind Sie sicher, dass Sie diesen Termin löschen möchten?')) {
+        $.ajax({
+            url: '/Appointment-Finder/backend/serviceHandler.php',
+            method: 'POST',
+        
+            data: JSON.stringify({
+                method: "deleteAppointment",
+                param: { appointment_id: appointmentId }
+            }),
+            success: function(response) {
+                alert('Termin erfolgreich gelöscht.');
+                loadAppointmentsToDelete(); // Liste neu laden
+            },
+            error: function(xhr, status, error) {
+                console.error("Fehler beim Löschen des Termins:", xhr.responseText);
+                alert('Fehler beim Löschen des Termins: ' + error);
+            }
+        });
+    }
+}
+
+*/
 
 
 /*

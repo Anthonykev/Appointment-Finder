@@ -83,13 +83,44 @@ class DataHandler
         }
     }
     
-    public function deleteAppointment($appointment_id) {
-        $stmt = $this->mysqli->prepare("DELETE FROM `appointments` WHERE `appointment_id` = ?");
-        $stmt->bind_param("i", $appointment_id);
-        $result = $stmt->execute();
-        $stmt->close();
-        return $result;
+    public function deleteAppointment($appointmentId) {
+        // Starten einer Transaktion
+        $this->mysqli->begin_transaction();
+        try {
+            // Löschen von Votes, die zu den Terminoptionen des Appointments gehören
+            $stmt = $this->mysqli->prepare("DELETE v FROM votes v JOIN available_dates ad ON v.date_id = ad.date_id WHERE ad.appointment_id = ?");
+            $stmt->bind_param("i", $appointmentId);
+            $stmt->execute();
+            $stmt->close();
+    
+            // Löschen der Terminoptionen
+            $stmt = $this->mysqli->prepare("DELETE FROM available_dates WHERE appointment_id = ?");
+            $stmt->bind_param("i", $appointmentId);
+            $stmt->execute();
+            $stmt->close();
+    
+            // Löschen des Termins selbst
+            $stmt = $this->mysqli->prepare("DELETE FROM appointments WHERE appointment_id = ?");
+            $stmt->bind_param("i", $appointmentId);
+            if (!$stmt->execute()) {
+                error_log("Fehler beim Löschen des Appointments: " . $stmt->error);
+                return false;
+            }
+            $stmt->close();
+            
+    
+            // Commit der Transaktion
+            $this->mysqli->commit();
+            return ['success' => true, 'message' => 'Termin erfolgreich gelöscht.'];
+            
+        } catch (Exception $e) {
+            // Rollback im Fehlerfall
+            $this->mysqli->rollback();
+            error_log($e->getMessage());
+            return ['success' => false, 'message' => 'Fehler beim Löschen des Termins.'];
+        }
     }
+    
 
     // public function addAvailableDate($appointment_id, $proposed_date) {
     //     $stmt = $this->mysqli->prepare("INSERT INTO `available_dates`(`appointment_id`, `proposed_date`) VALUES (?, ?)");
