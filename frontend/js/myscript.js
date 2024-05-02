@@ -1,7 +1,12 @@
 $(document).ready(function() {
     console.log("Jquery Funktioniert");
-    initializeFormAndHandleSubmission();
+    
     loadAppointments();
+    // Event-Handler nur einmal hinzufügen, außerhalb der anderen Funktion
+    $('#buchen').off('click').on('click', function() {
+        showAppointmentForm();
+       
+    });
     // Überprüfen Sie, ob Sie sich auf der Detailseite befinden und laden Sie die Details
     const urlParams = new URLSearchParams(window.location.search);
     const appointmentId = urlParams.get('appointment_id');
@@ -96,14 +101,10 @@ function showAppointmentForm() {
     });
 }
 
-function submitAppointment() 
-{
-    // Sammeln der Daten für die Terminoptionen
+function submitAppointment() {
     const dateOptions = [];
     $('#dateOptionsContainer .dateOption').each(function(index, element) {
-        // Stelle sicher, dass du alle drei Teile eines Datums gleichzeitig abrufst
-        if (index % 3 === 0) 
-        { // Jedes dritte Element ist ein neues Datum
+        if (index % 3 === 0) { // Jedes dritte Element ist ein neues Datum
             const proposedDate = $(element).val();
             const startDate = $(element).closest('.mb-3').next().find('.dateOption').val();
             const endDate = $(element).closest('.mb-3').next().next().find('.dateOption').val();
@@ -112,12 +113,9 @@ function submitAppointment()
                 vote_start_date: startDate,
                 vote_end_date: endDate
             });
-            console.log(dateOptions);
-
         }
     });
 
-    // Sammeln der restlichen Termin-Daten
     const appointmentData = {
         title: $('#title').val(),
         location: $('#location').val(),
@@ -125,24 +123,21 @@ function submitAppointment()
         duration: $('#duration').val(),
         creation_date: $('#creation_date').val(),
         voting_end_date: $('#voting_end_date').val(),
-        dateOptions: dateOptions // Korrekte Schreibweise
+        dateOptions: dateOptions
     };
 
-    console.log(appointmentData);  // Gibt die gesammelten Daten im Browser-Console-Log aus.
-    
-    // AJAX-Request an das Backend
     $.ajax({
         url: '/Appointment-Finder/backend/serviceHandler.php',
         method: 'POST',
         contentType: 'application/json',
         data: JSON.stringify({
             method: "addAppointment",
-            param: appointmentData // Hier übergeben wir das gesamte Objekt
+            param: appointmentData
         }),
         success: function(response) {
             alert('Termin erfolgreich hinzugefügt!');
-            console.log('Server Response:', response);
             $('#formContainer').empty();
+            loadAppointments(); // Terminliste neu laden nach dem Hinzufügen
         },
         error: function(xhr, status, error) {
             alert('Fehler beim Hinzufügen des Termins: ' + error);
@@ -150,7 +145,6 @@ function submitAppointment()
         }
     });
 }
-
 
 function loadAppointments() {
     $.ajax({
