@@ -352,6 +352,35 @@ function loadAppointmentsToDelete() {
 }
 
 function deleteAppointment(appointmentId) {
+    console.log("Sending appointment_id:", appointmentId); // Überprüfe, ob die ID korrekt ist
+    if (confirm('Sind Sie sicher, dass Sie diesen Termin löschen möchten?')) {
+        $.ajax({
+            url: '/Appointment-Finder/backend/serviceHandler.php',
+            method: 'POST',
+            contentType: 'application/json',
+            data: JSON.stringify({
+                method: "deleteAppointment",
+                param: { appointment_id: appointmentId }
+            }),
+            success: function(response) {
+                console.log(response);
+                if (response.success) {
+                    alert('Termin erfolgreich gelöscht.');
+                    loadAppointmentsToDelete(); // Liste neu laden
+                } else {
+                    alert('Fehler beim Löschen des Termins: ' + response.message);
+                }
+            },
+            error: function(xhr, status, error) {
+                console.error("Fehler beim Löschen des Termins:", xhr.responseText);
+                alert('Fehler beim Löschen des Termins: ' + error);
+            }
+        });
+    }
+}
+
+/*
+function deleteAppointment(appointmentId) {
     if (confirm('Sind Sie sicher, dass Sie diesen Termin löschen möchten?')) {
         $.ajax({
             url: '/Appointment-Finder/backend/serviceHandler.php',
@@ -371,155 +400,8 @@ function deleteAppointment(appointmentId) {
             }
         });
     }
-}
-
-
-/*
-// Funktion zum Löschen eines Termins
-function deleteAppointment(appointmentId) {
-    if (confirm('Sind Sie sicher, dass Sie diesen Termin löschen möchten?')) {
-        $.ajax({
-            url: '/Appointment-Finder/backend/serviceHandler.php',
-            method: 'POST',
-        
-            data: JSON.stringify({
-                method: "deleteAppointment",
-                param: { appointment_id: appointmentId }
-            }),
-            success: function(response) {
-                alert('Termin erfolgreich gelöscht.');
-                loadAppointmentsToDelete(); // Liste neu laden
-            },
-            error: function(xhr, status, error) {
-                console.error("Fehler beim Löschen des Termins:", xhr.responseText);
-                alert('Fehler beim Löschen des Termins: ' + error);
-            }
-        });
-    }
-}
-
-*/
-
-
-/*
-function displayAppointmentDetails(details) {
-    // Hier fügen Sie die Details des Termins in das DOM ein
-    const detailsContainer = $('#appointmentDetails');
-    detailsContainer.empty();
-
-    // Termin Details
-    const detailsHtml = `
-        <h2>Details für ${details.title}</h2>
-        <table class="table">
-            <tr>
-                <th>Titel</th>
-                <td>${details.title}</td>
-            </tr>
-            <tr>
-                <th>Ort</th>
-                <td>${details.location}</td>
-            </tr>
-            <tr>
-                <th>Information</th>
-                <td>${details.info}</td>
-            </tr>
-            <tr>
-                <th>Dauer</th>
-                <td>${details.duration} Minuten</td>
-            </tr>
-            <tr>
-                <th>Erstellungsdatum</th>
-                <td>${new Date(details.creation_date).toLocaleString()}</td>
-            </tr>
-            <tr>
-                <th>Enddatum der Abstimmung</th>
-                <td>${new Date(details.voting_end_date).toLocaleString()}</td>
-            </tr>
-        </table>
-    `;
-    // Anzeige der verfügbaren Termine als Radiobuttons oder Checkboxes
-    const datesHtml = details.availableDates.map(date => {
-        return `
-            <div class="form-check">
-                <input class="form-check-input" type="checkbox" name="dateOptions" value="${date.date_id}" id="dateOption${date.date_id}">
-                <label class="form-check-label" for="dateOption${date.date_id}">
-                    ${new Date(date.proposed_date).toLocaleString()}
-                </label>
-            </div>
-        `;
-    }).join('');
-
-    
-
-    // Fügen Sie das Abstimmungsformular hinzu
-    detailsContainer.append(`
-        <form id="votingForm">
-            <h3>Wählen Sie einen Termin:</h3>
-            ${datesHtml}
-            <!-- ... (hier kommt der Code für die Eingabe von Name und Kommentar) ... -->
-            <button type="submit" class="btn btn-primary">Abstimmen</button>
-        </form>
-    `);
+}*/
 
 
 
-   
 
-    // Event-Handler für das Submit-Event des Abstimmungsformulars
-    $('#votingForm').on('submit', function(e) {
-        e.preventDefault();
-        var voteData = {
-            appointmentId: $('#appointmentId').val(), // Oder wie Sie die ID erhalten
-            userName: $('#userName').val(),
-            comment: $('#comment').val(),
-            selectedDates: [] // Sie müssen die ausgewählten Daten hier einfügen
-        };
-    
-        // Die ausgewählten Termindaten müssen hier gesammelt werden, z.B.:
-        $('input[name="dateOptions"]:checked').each(function() {
-            voteData.selectedDates.push($(this).val());
-        });
-    
-        // Senden der Daten an das Backend
-        submitVote(voteData);
-    });
-
-    // Funktion, um die Abstimmung zu verarbeiten (diese müssen Sie schreiben)
-   
-
-    // Hier sollten Sie die Terminoptionen aus `details` durchlaufen und für jede eine Checkbox hinzufügen
-    // Beispiel (Sie müssen dies entsprechend Ihrer Datenstruktur anpassen):
-    details.availableDates.forEach(date => {
-        $('#dateOptions').append(`
-            <div class="form-check">
-                <input class="form-check-input" type="checkbox" id="dateOption${date.date_id}">
-                <label class="form-check-label" for="dateOption${date.date_id}">
-                    ${new Date(date.proposed_date).toLocaleString()}
-                </label>
-            </div>
-        `);
-    });
-}
-
-function submitVote(voteData) {
-    $.ajax({
-        url: '/Appointment-Finder/backend/serviceHandler.php',
-        method: 'POST', // Hier verwenden wir POST, um die Abstimmungsdaten zu senden
-        contentType: 'application/json', // Wir senden die Daten als JSON
-        data: JSON.stringify({
-            method: "submitVote", // Diese Methode muss im Backend definiert sein
-            param: voteData // Die Abstimmungsdaten
-        }),
-        success: function(response) {
-            // Verarbeiten Sie hier die erfolgreiche Abstimmung
-            console.log('Abstimmung erfolgreich:', response);
-            alert('Ihre Stimme wurde erfolgreich abgegeben.');
-        },
-        error: function(xhr, status, error) {
-            console.error("Fehler beim Senden der Abstimmung:", xhr.responseText);
-            alert('Es gab ein Problem bei der Abstimmung: ' + error);
-        }
-    });
-    
-}
-*/
