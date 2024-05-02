@@ -1,4 +1,5 @@
 $(document).ready(function() {
+    // stellt sicher das Code ausgeführt wird wenn DOM vollständig geladen ist
     console.log("Jquery Funktioniert");
     
     loadAppointments();
@@ -7,9 +8,12 @@ $(document).ready(function() {
         showAppointmentForm();
        
     });
-    // Überprüfen Sie, ob Sie sich auf der Detailseite befinden und laden Sie die Details
+    
+    // Mit dier Funktion wird Überprüft ob wir uns Detailseite befinden und dann Details laden
     const urlParams = new URLSearchParams(window.location.search);
+    // wir holen uns Appoinment ID 
     const appointmentId = urlParams.get('appointment_id');
+    // wenn appointment ID geht wird die funktion gestartet
     if (appointmentId) {
         loadAppointmentDetails(appointmentId);
     }
@@ -25,17 +29,12 @@ $(document).ready(function() {
 
 });
 
-function initializeFormAndHandleSubmission() {
-    // Event-Handler nur einmal hinzufügen, außerhalb der anderen Funktion
-    $('#buchen').off('click').on('click', function() {
-        showAppointmentForm();
-       
-    });
-}
 
 // Funktion, um eine neue Terminoption im Formular hinzuzufügen
 function addDateOption() {
     const dateOptionsContainer = $('#dateOptionsContainer');
+    // hier Berechnung für Index der neuen Termindatenoptionen
+    // um die notwendigen option container zu erstellen wegen Datum Start und ende
     const newIndex = dateOptionsContainer.children().length / 3; // Jede Terminoption hat jetzt 3 Elemente (proposed_date, vote_start_date, vote_end_date)
     dateOptionsContainer.append(`
         <div class="mb-3">
@@ -102,12 +101,15 @@ function showAppointmentForm() {
 }
 
 function submitAppointment() {
+    // leeres array erstellt
     const dateOptions = [];
+    //Code durchläuft alle elemente der Klasse innerhalb des Containers
     $('#dateOptionsContainer .dateOption').each(function(index, element) {
         if (index % 3 === 0) { // Jedes dritte Element ist ein neues Datum
             const proposedDate = $(element).val();
             const startDate = $(element).closest('.mb-3').next().find('.dateOption').val();
             const endDate = $(element).closest('.mb-3').next().next().find('.dateOption').val();
+            // Alle elemnte werde Dateoption hinzugfefügt
             dateOptions.push({
                 proposed_date: proposedDate,
                 vote_start_date: startDate,
@@ -139,10 +141,7 @@ function submitAppointment() {
             $('#formContainer').empty();
             loadAppointments(); // Terminliste neu laden nach dem Hinzufügen
         },
-        error: function(xhr, status, error) {
-            alert('Fehler beim Hinzufügen des Termins: ' + error);
-            console.error('Fehlerdetails:', xhr.responseText);
-        }
+        
     });
 }
 
@@ -162,25 +161,7 @@ function loadAppointments() {
 }
 
 
-/*
-function displayAppointments(appointments) {
-    console.log("Gespeicherte Termine: ", appointments); // Zeigt die geladenen Termindaten in der Konsole an
-    try {
-        const tableBody = $('#appointmentsTable tbody');
-        tableBody.empty();
-        appointments.forEach(appointment => {
-            const statusClass = new Date(appointment.voting_end_date) < new Date() ? 'expired' : 'active';
-            const row = `<tr class="${statusClass}">
-                <td>${appointment.title}</td>
-                <td>${appointment.location}</td>
-                <td><button onclick="location.href='details.html?appointment_id=${appointment.appointment_id}'">Details ansehen</button></td>
-            </tr>`;
-            tableBody.append(row);
-        });
-    } catch (e) {
-        console.error("Es gab einen Fehler beim Parsen der Termine: ", e);
-    }
-}*/
+
 function displayAppointments(appointments) {
     console.log("Gespeicherte Termine: ", appointments);
     const tableBody = $('#appointmentsTable tbody');
@@ -324,17 +305,23 @@ function submitVote(voteData) {
     });
 }
 
-
+// Diese Funktion wird verwendet um die Termine aufzurufen die gelöscht werden
 function loadAppointmentsToDelete() {
+    // zeigt auf serviceHandler und wir Holen wieder daten mit GetAllAPp
     $.ajax({
         url: '/Appointment-Finder/backend/serviceHandler.php',
         method: 'GET',
         data: {
+            // welche Methode hier verwendet wird
             method: "getAllAppointments"
         },
+        // Die erwartete Antwort von Server ist JSON
         dataType: 'json',
+
         success: function(appointments) {
+            //ID mit appDelete erwartet ein Tabelle-Element
             const tableBody = $('#appointmentDelete tbody');
+            // zuerst Inhalt tbody wird geelert
             tableBody.empty();
             appointments.forEach(function(appointment) {
                 tableBody.append(`
@@ -346,10 +333,6 @@ function loadAppointmentsToDelete() {
                 `);
             });
         },
-        error: function(xhr, status, error) {
-            console.error("Fehler beim Laden der Termine:", xhr.responseText);
-            alert('Fehler beim Laden der Termine: ' + error);
-        }
     });
 }
 
@@ -365,106 +348,17 @@ function deleteAppointment(appointmentId) {
                 method: "deleteAppointment",
                 param: { appointment_id: appointmentId }
             }),
+            // Bei erfolg sieht man bekommt man Termin erfolgreich 
             success: function(response) {
                 console.log(response);
                 if (response.success) {
                     alert('Termin erfolgreich gelöscht.');
-                    loadAppointmentsToDelete(); // Liste neu laden
+                    loadAppointmentsToDelete(); // Liste neugeladen
+                    //Sonst Fehlermeldung
                 } else {
                     alert('Fehler beim Löschen des Termins: ' + response.message);
                 }
             },
-            error: function(xhr, status, error) {
-                console.error("Fehler beim Löschen des Termins:", xhr.responseText);
-                alert('Fehler beim Löschen des Termins: ' + error);
-            }
         });
     }
 }
-
-
-/*
-// Diese Funktion lädt alle Termine und zeigt sie in einer Tabelle mit Lösch-Buttons an.
-function loadAppointmentsToDelete() {
-    $.ajax({
-        url: '/Appointment-Finder/backend/serviceHandler.php',
-        method: 'GET',
-        data: {
-            method: "getAllAppointments"
-        },
-        dataType: 'json',
-        success: function(appointments) {
-            const tableBody = $('#appointmentDelete tbody');
-            tableBody.empty();
-            appointments.forEach(function(appointment) {
-                tableBody.append(`
-                    <tr>
-                        <td>${appointment.title}</td>
-                        <td>${appointment.location}</td>
-                        <td><button onclick="deleteAppointment(${appointment.appointment_id})" class="btn btn-danger">Löschen</button></td>
-                    </tr>
-                `);
-            });
-        },
-        
-        //  error: function(xhr, status, error) {
-        //     console.error("Fehler beim Laden der Termine:");
-        // //     // alert('Fehler beim Laden der Termine: ' + error);
-        // }
-    });
-}
-
-function deleteAppointment(appointmentId) {
-    console.log("Sending appointment_id:", appointmentId); // Überprüfe, ob die ID korrekt ist
-    if (confirm('Sind Sie sicher, dass Sie diesen Termin löschen möchten?')) {
-        $.ajax({
-            url: '/Appointment-Finder/backend/serviceHandler.php',
-            method: 'POST',
-            contentType: 'application/json',
-            data: JSON.stringify({
-                method: "deleteAppointment",
-                param: { appointment_id: appointmentId }
-            }),
-            success: function(response) {
-                console.log(response);
-                if (response.success) {
-                    alert('Termin erfolgreich gelöscht.');
-                    loadAppointmentsToDelete(); // Liste neu laden
-                } else {
-                    alert('Fehler beim Löschen des Termins: ' + response.message);
-                }
-            },
-            // error: function(xhr, status, error) {
-            //     console.error("Fehler beim Löschen des Termins:", xhr.responseText);
-            //     alert('Fehler beim Löschen des Termins: ' + error);
-            // }
-        });
-    }
-}
-*/
-/*
-function deleteAppointment(appointmentId) {
-    if (confirm('Sind Sie sicher, dass Sie diesen Termin löschen möchten?')) {
-        $.ajax({
-            url: '/Appointment-Finder/backend/serviceHandler.php',
-            method: 'POST',
-            contentType: 'application/json', // Stelle sicher, dass der Content-Type auf application/json gesetzt ist
-            data: JSON.stringify({
-                method: "deleteAppointment",
-                param: { appointment_id: appointmentId }
-            }),
-            success: function(response) {
-                alert('Termin erfolgreich gelöscht.');
-                loadAppointmentsToDelete(); // Liste neu laden
-            },
-            error: function(xhr, status, error) {
-                console.error("Fehler beim Löschen des Termins:", xhr.responseText);
-                alert('Fehler beim Löschen des Termins: ' + error);
-            }
-        });
-    }
-}*/
-
-
-
-
