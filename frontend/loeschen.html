@@ -34,10 +34,6 @@
   
                     <br>
                     <li class="nav-item w-100">
-                      <button type="button" class="btn btn-secondary w-100" id="buchen">Terminerstellung</button>
-                    </li>
-                    <br>
-                    <li class="nav-item w-100">
                       <a href="./loeschen.html" class="btn btn-secondary w-100" role="button">Termin Bearbeitung</a>
                       
                     </li>
@@ -85,16 +81,6 @@
 </div>
 
     <script src="./js/myscript.js"></script>
-    <script>
-        $(document).ready(function() {
-            loadAppointmentsToDelete();
-            // Event-Handler für das Löschen von Terminen, delegiert an die Tabelle
-            $('#appointmentDelete').on('click', 'button', function() {
-                const appointmentId = $(this).data('appointment-id');
-                deleteAppointment(appointmentId);
-            });
 
-        });
-    </script>
 </body>
 </html>
